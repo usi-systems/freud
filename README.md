@@ -106,7 +106,7 @@ When the target program exits, the Pin tools creates a "symbols" directory, cont
 **RUN THE STATISTICAL ANALYSIS**
 This step requires the analysis tool, which is created in the freud-statistics directory. The analysis tool has many command line parameters, which are described by the help message that it prints when executed without parameters. For example, the following command creates performance annotations (3) with the default R2 threshold (0) for the *time* metric (0) for the "_Z20test_linear_branchesiii" symbol, whose binary logs are in the given directory.
 ```sh
-- ./freud-statistics 3 0 0 _Z20test_linear_branchesiii symbols/_Z20test_linear_branchesiii/
+./freud-statistics 3 0 0 _Z20test_linear_branchesiii symbols/_Z20test_linear_branchesiii/
 ```
 The output of the analysis is in the _eps_ (for the plots) and _ann_ (for the text annotations) directories.
 
