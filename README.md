@@ -1,4 +1,4 @@
- # *FREUD*
+# *FREUD*
 This is the main repository for Freud, originally described in the publication 
 > Analyzing System Performance with Probabilistic Performance Annotations 
 > D. Rogora, A. Carzaniga A. Diwan, M. Hauswirth, R. Soulé
