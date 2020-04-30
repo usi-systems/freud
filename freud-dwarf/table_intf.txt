@@ -1,0 +1,18 @@
+[ for each symbol ]
+###
+symbol_name
+instr_entry_point
+param_num
+	[ for each param ]
+	location
+	offset_from_location
+	is_addr + is_reg_with_addr
+	is_ptr
+	type_name
+	number_of_feature_sets
+		[ for each feature_set ]
+		hash_of_the_feature_set (0 if basic_type)
+		num_of_features
+			[ for each feature of the set ]
+			type_name
+			fname	
