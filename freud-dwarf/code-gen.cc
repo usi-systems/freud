@@ -175,7 +175,7 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 			continue;
 		if (basic_features.find(t) == basic_features.end()
 			&& type_pair.second.empty()) {
-			std::cout << "Warning: no members for " << type_pair.first << std::endl;
+			utils::log(VL_DEBUG, "Warning: no members for " + type_pair.first);
 			continue;
 		}
 

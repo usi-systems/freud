@@ -877,7 +877,8 @@ std::string dwarf_explorer::get_class_linkage_name(const std::string & tname, co
 				int nend = iidx;
 				if (part.size() == 0)
 					return "notfound"; // this string didn't have any number
-				int len = std::stoi(part);
+				// FIXME: handle scalar values in mangled names
+				unsigned long long len = std::stoul(part);
 				if (nend + len >= input.size()) {
 					// this happens for primitive types with special encodings
 					// I don't need this information anyway
