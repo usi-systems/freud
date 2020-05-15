@@ -22,16 +22,15 @@
 ********/
 KNOB<bool> KnobUseProcFS(KNOB_MODE_WRITEONCE, "pintool", "procfs", "true", "Read from procfs (needed for cpu speed)");
 KNOB<bool> KnobFindBranches(KNOB_MODE_WRITEONCE, "pintool", "branches", "true", "Find branches");
-KNOB<bool> KnobMeasureMemory(KNOB_MODE_WRITEONCE, "pintool", "memory", "true", "Measure memory allocations");
-KNOB<bool> KnobMeasureLocks(KNOB_MODE_WRITEONCE, "pintool", "locks", "true", "Measure locks related metrics");
+KNOB<bool> KnobMeasureMemory(KNOB_MODE_WRITEONCE, "pintool", "memory", "false", "Measure memory allocations");
+KNOB<bool> KnobMeasureLocks(KNOB_MODE_WRITEONCE, "pintool", "locks", "false", "Measure locks related metrics");
 KNOB<bool> KnobMeasurePageFaults(KNOB_MODE_WRITEONCE, "pintool", "pfaults", "false", "Measure page faults (needs procfs)");
 KNOB<unsigned int> KnobDumpPeriod(KNOB_MODE_WRITEONCE, "pintool", "dump_period", "5000", "Time (ms) between consecutive flush to the output");
 KNOB<unsigned int> KnobLogsCount(KNOB_MODE_WRITEONCE, "pintool", "logs_count", "1000", "How many samples to take per dump_period for each symbol");
 KNOB<unsigned int> KnobVerbosityLevel(KNOB_MODE_WRITEONCE, "pintool", "verbosity_level", "1", "Verbosity level");
 
 #define GET_PROCFS_INFO
-// this is disabled by default to avoid unnecessary overhead
-//#define DEBUG 
+//#define DEBUG // should be disabled by default to avoid unnecessary overhead
 
 struct thread_status {
 	void init() {
@@ -109,6 +108,7 @@ INT32 usage()
 
 #ifdef GET_PROCFS_INFO
 std::ifstream * open_stat_fhandler(OS_THREAD_ID otid) {
+	log(VL_DEBUG, "Opening stat for new thread");
 	std::stringstream ss;
 	ss << "/proc/";
 	ss << pid;
@@ -124,6 +124,7 @@ std::ifstream * open_stat_fhandler(OS_THREAD_ID otid) {
 }
 
 std::ifstream * open_status_fhandler(OS_THREAD_ID otid) {
+	log(VL_DEBUG, "Opening status for new thread");
 	std::stringstream ss;
 	ss << "/proc/";
 	ss << pid;
@@ -539,8 +540,8 @@ VOID mutex_acquire_called(THREADID tid)
 	log(VL_DEBUG, oss.str());
 #endif
 	if (tstatus[tid].mutex_wait_start != 0) {
-		log(VL_ERROR, "Wait start was set alrady, this is a problem");
-		exit(-1);
+		log(VL_ERROR, "Mutex wait start was set already; Pin missed the exit point from pthread_mutex_lock()?");
+		//exit(-1);
 	}
 	tstatus[tid].mutex_wait_start = mutex_wait_start_time;
 }
@@ -555,8 +556,8 @@ VOID condwait_called(THREADID tid)
 	log(VL_DEBUG, oss.str());
 #endif
 	if (tstatus[tid].cond_wait_start != 0) {
-		log(VL_ERROR, "Wait start was set alrady, this is a problem");
-		exit(-1);
+		log(VL_ERROR, "Cond wait start was set already; Pin missed the exit point from pthread_cond_wait()?");
+		//exit(-1);
 	}
 	tstatus[tid].cond_wait_start = cond_wait_start_time;
 	// This implicitly releases the lock!
@@ -684,7 +685,7 @@ VOID end_of_execution(struct routine_descriptor *desc, THREADID tid) {
 	OS_THREAD_ID otid = PIN_GetTid();
 	std::unordered_map<OS_PROCESS_ID, struct thr_file_handlers>::const_iterator thandlers = tfile_handlers.find(otid);
 	// If the all the previous executions by this thread were sampled out, than this handler is never opened
-	if (thandlers != tfile_handlers.end())
+	if (KnobMeasurePageFaults.Value() && (thandlers != tfile_handlers.end()))
 		get_pfaults_cswitches(thandlers->second.stat_file, min_pf, maj_pf, thandlers->second.status_file, vol_cs, inv_cs);
 #endif	
 
@@ -847,8 +848,9 @@ VOID instrument_function(RTN rtn, VOID *v) {
 	}
 
 	if (!found) {
-		log(VL_ERROR, "Cannot find entry point for " + RTN_Name(rtn) + "; trying before rtn");
-		log(VL_ERROR, "Maybe the target binary has been recompiled?");
+		log(VL_ERROR, "Cannot find entry point for " + RTN_Name(rtn) + "; trying before rtn.");
+		log(VL_ERROR, "### THIS MIGHT CAUSE UNDEFINED BEHAVIOR! ###");
+		log(VL_ERROR, "Maybe the target binary has been recompiled after the execution of freud-dwarf?");
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)start_of_execution, 
 			IARG_UINT64, &(routines_catalog.find(RTN_Name(rtn))->second),
 			IARG_THREAD_ID,
@@ -881,6 +883,7 @@ VOID jit_run(TRACE t, VOID *v) {
 	// TODO: check what actually happens during JIT compilation on multithreaded applications
 }
 
+#ifdef GET_PROCFS_INFO	
 void get_base_address() {
 	pid = PIN_GetPid();
 	std::stringstream ss;
@@ -900,6 +903,7 @@ void get_base_address() {
 	ss << std::hex << mem_range;
 	ss >> base_address;
 }
+#endif
 
 
 /* ===================================================================== */
@@ -915,15 +919,18 @@ int main(int argc, char * argv[])
 		return usage();
 
 	vl = (enum verbosity_levels)KnobVerbosityLevel.Value();
-	
+
+#ifdef GET_PROCFS_INFO	
 	open_freq_handlers();
 	get_base_address();
+#endif
+
 	quit_dump_thread = false;
 
 	// No std::to_string() in STL...
 	std::ostringstream oss;
 	oss << base_address << std::endl;
-	log(VL_DEBUG, "BADDR " + oss.str());
+	log(VL_DEBUG, "BASE ADDRESS " + oss.str());
 	for (int t = 0; t < MAXTHREADS; t++) {
 		tstatus[t].init();
 	}
