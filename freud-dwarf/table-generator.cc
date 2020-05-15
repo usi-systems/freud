@@ -3,6 +3,25 @@
 extern std::unordered_map<std::string, std::list<std::string>> artificial_features;
 
 /// ************ PRIVATE ************ ////
+bool table_generator::check_features(dwarf_explorer * de, const std::string sym_name, const std::string type_name) {
+	if (de->type_is_undefined(sym_name))
+		return false;
+
+	// --- SWITCH: complex vs basic type
+	if (de->hierarchy_tree_nodes_map.find(sym_name) != de->hierarchy_tree_nodes_map.end()) {
+		// --- SWITCH: complex type
+		// even if polymorphic, there should be at least the vptr
+		// so, no need to explore the hierarchy tree
+		return !de->types.at(type_name).empty();  
+	} else if (basic_features.find(type_name) != basic_features.end()) {
+		// --- SWITCH: primitive type
+		return (basic_features.at(type_name).num_of_values > 0);
+	} else {
+		utils::log(VL_ERROR, "Could not find type " + type_name);
+		return false;
+	}
+}
+
 void table_generator::create_table_entries_for_classes_dfs(dwarf_explorer * de, int tree_size, std::string &descriptors_code, const std::string sym_name, const std::string ppname) {
 	struct hierarchy_tree_node * htn = de->hierarchy_tree_nodes_map.at(sym_name);
 	descriptors_code += get_table_entry_for_node(de, tree_size, htn, ppname);
@@ -132,6 +151,8 @@ std::string table_generator::get_table_entry_for_node(dwarf_explorer * de, int t
 void table_generator::create_table(dwarf_explorer * de, std::string tbl_filename) {
 	std::ofstream descf(tbl_filename);
 	std::string descriptors_code = "";
+
+	// FOR EACH SYMBOL
 	for (auto p: de->func_pars_map) {
 		if (p.second.size() == 0)
 			continue; // no features, skip
@@ -148,10 +169,14 @@ void table_generator::create_table(dwarf_explorer * de, std::string tbl_filename
 		descriptors_code += std::to_string(de->func_addr_map[p.first]) + "\n";
 
 		size_t sz = p.second.size();
+		std::unordered_set<std::string> to_skip;
 
 		for (auto pp: p.second) {
-			std::string sn = pp.type_name.substr(pp.type_name.find(" ") + 1, std::string::npos);
-			if (de->type_is_undefined(sn)) {
+			std::string sym_name = pp.type_name.substr(pp.type_name.find(" ") + 1, std::string::npos);
+
+			// Check whether it actually has features
+			if (check_features(de, sym_name, pp.type_name) == false) {
+				to_skip.insert(sym_name);
 				sz--;
 			}
 		}
@@ -160,7 +185,7 @@ void table_generator::create_table(dwarf_explorer * de, std::string tbl_filename
 		descriptors_code += std::to_string(sz) + "\n";
 		for (auto pp: p.second) {
 			std::string sym_name = pp.type_name.substr(pp.type_name.find(" ") + 1, std::string::npos);
-			if (!de->type_is_undefined(sym_name)) {
+			if (to_skip.find(sym_name) == to_skip.end()) { //!de->type_is_undefined(sym_name)) {
 				/*****
 				 * DESCRIPTOR INFO  
 				****/
