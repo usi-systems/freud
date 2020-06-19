@@ -7,11 +7,12 @@
 
 #include "rtn_execution.h"
 
-#define DUMP_LOG_PERIOD 5000
 #define EXPECTED_SAMPLES_PER_PERIOD 1000.0 // num of logs to collect for a specific object
 #define MAXTHREADS 64
 
 #define SYSTEM_FEATURES_CNT 1
+
+unsigned int DUMP_LOG_PERIOD = 5000;
 
 struct primitive_feature {
 	primitive_feature(string t, string n): type(t), name(n) {};// { array_dims = 0; };

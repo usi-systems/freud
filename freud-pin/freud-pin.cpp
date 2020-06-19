@@ -280,7 +280,7 @@ VOID start_of_execution(struct routine_descriptor *desc,
 			
 			uint64_t instr_stop_time = rdtsc();
 			uint64_t duration = instr_stop_time - instr_start_time;
-			for (struct activation_record ar_s: tstatus[tid].activation_stack) 
+			for (struct activation_record & ar_s: tstatus[tid].activation_stack)
 				ar_s.instrumentation_time += duration;
 			
 			return;
@@ -403,15 +403,14 @@ VOID start_of_execution(struct routine_descriptor *desc,
 	uint64_t duration = instr_stop_time - instr_start_time;
 
 	// TODO: move this loop somewhere where it won't be considered in the symbol execution time
-	for (struct activation_record ar_s: tstatus[tid].activation_stack) 
+	for (struct activation_record & ar_s: tstatus[tid].activation_stack)
 		ar_s.instrumentation_time += duration;
 	
 	tstatus[tid].activation_stack.push_back(ar);
 
 	// Take a timestamp for the beginning of execution
-	re->trigger_start();
-
 	// Finally, start the execution of the actual function
+	re->trigger_start();
 }
 
 VOID memory_call(ADDRINT memory_size, THREADID tid)
@@ -423,7 +422,7 @@ VOID memory_call(ADDRINT memory_size, THREADID tid)
 	log(VL_DEBUG, oss.str());
 #endif
 	if (tid < MAXTHREADS) {
-		for (struct activation_record ar_s: tstatus[tid].activation_stack) {
+		for (struct activation_record & ar_s: tstatus[tid].activation_stack) {
 			if (ar_s.ptr) {
 				ar_s.ptr->do_malloc(memory_size);
 			}
@@ -474,7 +473,7 @@ VOID lock_acquired(ADDRINT result, THREADID tid)
 	}
 
 	uint64_t total_wait = lock_start_time - tstatus[tid].mutex_wait_start;
-	for (struct activation_record ar_s: tstatus[tid].activation_stack) {
+	for (struct activation_record & ar_s: tstatus[tid].activation_stack) {
 		if (ar_s.ptr) {
 			ar_s.ptr->done_waiting(total_wait);
 		}
@@ -497,7 +496,7 @@ VOID lock_released_by_cond(ADDRINT result, THREADID tid, uint64_t time)
 		if (tstatus[tid].current_locks_held == 0) {
 			// Not holding any more locks
 			uint64_t lock_time = lock_stop - tstatus[tid].lock_start;
-			for (struct activation_record ar_s: tstatus[tid].activation_stack) {
+			for (struct activation_record & ar_s: tstatus[tid].activation_stack) {
 				if (ar_s.ptr) {
 					ar_s.ptr->released_all_locks(lock_time, lock_stop);
 				}
@@ -521,7 +520,7 @@ VOID lock_released(ADDRINT result, THREADID tid)
 		if (tstatus[tid].current_locks_held == 0) {
 			// Not holding any more locks
 			uint64_t lock_time = lock_stop - tstatus[tid].lock_start;
-			for (struct activation_record ar_s: tstatus[tid].activation_stack) {
+			for (struct activation_record & ar_s: tstatus[tid].activation_stack) {
 				if (ar_s.ptr) {
 					ar_s.ptr->released_all_locks(lock_time, lock_stop);
 				}
@@ -580,7 +579,7 @@ VOID condwait_returned(THREADID tid)
 		log(VL_ERROR, "Wait start was zero, this is a problem");
 		exit(-1);
 	}
-	for (struct activation_record ar_s: tstatus[tid].activation_stack) {
+	for (struct activation_record & ar_s: tstatus[tid].activation_stack) {
 		if (ar_s.ptr) {
 			ar_s.ptr->done_waiting(total_wait);
 		}
@@ -694,7 +693,10 @@ VOID end_of_execution(struct routine_descriptor *desc, THREADID tid) {
 		// According to Pin manual, we can miss some exit points at times
 		// So, remove from the stack all the "unexited" functions first, assuming that they
 		// terminated at the same time of the currently exiting function
-		while (strcmp(tstatus[tid].activation_stack.back().rtn_name.c_str(), desc->name.c_str()) != 0) {
+		while (tstatus[tid].activation_stack.back().rtn_name != desc->name) {
+#ifdef DEBUG
+			log(VL_DEBUG, "Removing leftovers from the stack!");
+#endif
 			if (tstatus[tid].activation_stack.back().ptr) {
 				uint64_t duration = rdtsc() - instr_start_time;
 				tstatus[tid].activation_stack.back().ptr->trigger_end(tstatus[tid].activation_stack.back().instrumentation_time + duration, tstatus[tid].current_locks_held, tstatus[tid].lock_start, min_pf, maj_pf, vol_cs, inv_cs);
@@ -717,7 +719,7 @@ VOID end_of_execution(struct routine_descriptor *desc, THREADID tid) {
 		// If there's something else being executed, 
 		// add the time spent in this function
 		uint64_t duration = rdtsc() - instr_start_time;
-		for (struct activation_record ar_s: tstatus[tid].activation_stack) 
+		for (struct activation_record & ar_s: tstatus[tid].activation_stack)
 			ar_s.instrumentation_time += duration;
 	}
 }
@@ -876,9 +878,11 @@ VOID instrument_function(RTN rtn, VOID *v) {
 
 VOID jit_run(TRACE t, VOID *v) {
 	// No std::to_string() in STL...
+#ifdef DEBUG
 	std::ostringstream oss;
 	oss << PIN_ThreadId(); 
-	//log(VL_DEBUG, "JIT kicked in on thr " + oss.str());
+	log(VL_DEBUG, "JIT kicked in on thr " + oss.str());
+#endif
 	tstatus[PIN_ThreadId()].activation_stack.clear();
 	// TODO: check what actually happens during JIT compilation on multithreaded applications
 }
@@ -966,6 +970,7 @@ int main(int argc, char * argv[])
 	PIN_AddFiniFunction(Fini, 0);
 
 	// Prepare the dumping thread
+	DUMP_LOG_PERIOD = KnobDumpPeriod.Value();
 	PIN_SpawnInternalThread(&dump_logs, NULL, 0, &dlt_uid);
 	log(VL_DEBUG, "Launched dumping thread");
 
