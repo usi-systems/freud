@@ -24,6 +24,7 @@ analysis::analysis(const std::string &mname, method * m, metric_type mtype, std:
 	min_det = MIN_DET;
 
 	//m->add_loops_as_feature();
+#if 0
 	for (measure * mmm: mtd->data) {
 		//std::cout << std::endl << std::endl << "T: " << mmm->measures[MT_TIME] << std::endl;
 		std::cout << mmm->measures[MT_TIME] << " ";
@@ -38,6 +39,7 @@ analysis::analysis(const std::string &mname, method * m, metric_type mtype, std:
 		}
 		std::cout << std::endl;
 	}
+#endif
 }
 
 bool analysis::cluster() {
