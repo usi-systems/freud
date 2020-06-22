@@ -154,7 +154,7 @@ std::string plotter::getGnuplotScriptContent(const std::vector<measure *> & data
 					for (int i = 0; i < ff_deg; i++) 
 						res << "*x";
 				else 
-					res << "*log(x)/log(2)";
+					res << "*x*log(x)/log(2)";
 			} else {
 				int colon_pos = fr.find(":");
 				if (colon_pos != std::string::npos) {
@@ -168,12 +168,12 @@ std::string plotter::getGnuplotScriptContent(const std::vector<measure *> & data
 						for (int i = 0; i < ff_deg; i++) 
 							res << "*x";
 					else 
-						res << "*log(x)/log(2)";
+						res << "*x*log(x)/log(2)";
 					if (sf_deg != LOG_DEG)
 						for (int i = 0; i < sf_deg; i++) 
 							res << "*y";
 					else 
-						res << "*log(y)/log(2)";
+						res << "*y*log(y)/log(2)";
 				} else {
 					res << "oreg" << fi << "(x) = ";
 					ff_deg = utils::get_degree(fr);
@@ -182,7 +182,7 @@ std::string plotter::getGnuplotScriptContent(const std::vector<measure *> & data
 						for (int i = 0; i < ff_deg; i++) 
 							res << "*x";
 					else 
-						res << "*log(x)/log(2)";
+						res << "*x*log(x)/log(2)";
 				}
 				foolish_map[fi] = fr;
 				fi++;

@@ -24,6 +24,20 @@ analysis::analysis(const std::string &mname, method * m, metric_type mtype, std:
 	min_det = MIN_DET;
 
 	//m->add_loops_as_feature();
+	for (measure * mmm: mtd->data) {
+		//std::cout << std::endl << std::endl << "T: " << mmm->measures[MT_TIME] << std::endl;
+		std::cout << mmm->measures[MT_TIME] << " ";
+		uint64_t csum = 0;
+		for (uint64_t c_id_64: mmm->children_ids) {
+				if (mim->find(c_id_64) != mim->end()) {
+					measure * mm = mim->at(c_id_64);
+					std::cout << mm->measures[MT_TIME] << " ";
+				} else {
+					std::cout << "Couldn't find " << c_id_64 << std::endl;
+				}
+		}
+		std::cout << std::endl;
+	}
 }
 
 bool analysis::cluster() {
@@ -433,6 +447,8 @@ multiple_regression * analysis::compute_best_multiple_regression(const std::vect
 		int prev_num_feat = names_map_to_r.size();
 		if (d == 2)
 			prev_num_feat += quad_names_map_to_r.size();
+		else if (d == LOG_DEG)
+			prev_num_feat += log_names_map_to_r.size();
 		coefficients_map.clear();
 		used_features.clear();
 		cff.clear();
@@ -451,6 +467,12 @@ multiple_regression * analysis::compute_best_multiple_regression(const std::vect
 
 		// - lm() to recompute the model if any feature was not significant
 		utils::log(VL_DEBUG, "Used " + std::to_string(used_features.size()) + " / " + std::to_string(prev_num_feat));
+		if (used_features.size() > prev_num_feat) {
+			utils::log(VL_ERROR, "Used more features than available. This is a problem!");
+			for (std::string s: used_features)
+				std::cout << s << std::endl;
+			exit(-1);
+		}
 		// keep iterating while we drop some features
 		while (found && used_features.size() < prev_num_feat) {
 			tmp_f_vector.clear();
@@ -463,6 +485,10 @@ multiple_regression * analysis::compute_best_multiple_regression(const std::vect
 			cff.clear();
 			found = stats::compute_multiple_regression(in_data, tmp_f_vector, quad_features, log_features, features_interaction, quad_features_interaction, log_features_interaction, metric, used_features, r2, intp, cff, bic, d, mat, names_map_to_r, names_map_to_c, quad_names_map_to_r, quad_names_map_to_c, log_names_map_to_r, log_names_map_to_c, coefficients_map, true, min_det);
 			utils::log(VL_DEBUG, "Used " + std::to_string(used_features.size()) + " / " + std::to_string(prev_num_feat));
+			if (used_features.size() > prev_num_feat) {
+				utils::log(VL_ERROR, "Used more features than available. This is a problem!");
+				exit(-1);
+			}
 			if (found && bic + bic_penalty < best_bic && used_features.size() == prev_num_feat) {
 				best_bic = bic;
 				best_r2 = r2;
