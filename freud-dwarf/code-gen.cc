@@ -26,7 +26,7 @@ std::string code_generator::get_complex_feature_processing_text_from_addr(const 
 	if (basic_features.find(m.type_name) != basic_features.end()) {
 		std::string front_part = "";
 		std::string back_part = "";
-		bool assigned = false;
+		bool assigned = false, used_pinsafecopy = false;
 		unsigned int reffed = 0;
 		for (unsigned int p = 0; p < m.pointer.size() - 1; p++) {
 			unsigned int deref_level = m.pointer[p + 1];
@@ -40,7 +40,8 @@ std::string code_generator::get_complex_feature_processing_text_from_addr(const 
 			} else {
 				for (unsigned int i = 0; i < deref_level; i++) {
 					assigned = true;
-						front_part += "if (PIN_SafeCopy(&foo, (void *)(foo + " + std::to_string(m.offset[p]) + "), sizeof(ADDRINT)) == sizeof(ADDRINT)) {";
+					front_part += "if (PIN_SafeCopy(&foo, (void *)(foo + " + std::to_string(m.offset[p]) + "), sizeof(ADDRINT)) == sizeof(ADDRINT)) {";
+					used_pinsafecopy = true;
 					if (p == m.pointer.size() - 2) // I'm interested in the dereferencing of the last level, only
 						reffed++;
 				}
@@ -90,8 +91,7 @@ std::string code_generator::get_complex_feature_processing_text_from_addr(const 
 			}
 			feature_processing += ");\n" + back_part; 
 #endif
-			unsigned int deref_level = m.pointer[m.pointer.size() - 1] - (m.ai.dims > 0);
-			if (deref_level) // this is needed only if we copied stuff with PIN_SafeCopy
+			if (used_pinsafecopy) // this is needed only if we copied stuff with PIN_SafeCopy
 				feature_processing += "else { re->add_feature_value((int)0); re->add_feature_value((int)0); }\n"; // placeholder to keep intact the indices of features...
 		}
 	}

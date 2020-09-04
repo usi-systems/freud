@@ -345,9 +345,10 @@ VOID start_of_execution(struct routine_descriptor *desc,
 		if (desc->params[q].runtime_type_to_features.size() == 1) {
 			oss.str("Processing (");
 		} else {
-			oss.str("Processing COMPLEX (");
+			oss.str("Processing w/ dyn. polymorphism (");
 		}
-		oss << q << "/" << desc->param_count << ")";
+		oss << q << "/" << desc->param_count << ") ";
+		oss << re->feature_values.size();
 		log(VL_DEBUG, oss.str());
 #endif
 

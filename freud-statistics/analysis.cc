@@ -472,7 +472,7 @@ multiple_regression * analysis::compute_best_multiple_regression(const std::vect
 		if (used_features.size() > prev_num_feat) {
 			utils::log(VL_ERROR, "Used more features than available. This is a problem!");
 			for (std::string s: used_features)
-				std::cout << s << std::endl;
+				utils::log(VL_ERROR, s);
 			exit(-1);
 		}
 		// keep iterating while we drop some features
@@ -488,8 +488,10 @@ multiple_regression * analysis::compute_best_multiple_regression(const std::vect
 			found = stats::compute_multiple_regression(in_data, tmp_f_vector, quad_features, log_features, features_interaction, quad_features_interaction, log_features_interaction, metric, used_features, r2, intp, cff, bic, d, mat, names_map_to_r, names_map_to_c, quad_names_map_to_r, quad_names_map_to_c, log_names_map_to_r, log_names_map_to_c, coefficients_map, true, min_det);
 			utils::log(VL_DEBUG, "Used " + std::to_string(used_features.size()) + " / " + std::to_string(prev_num_feat));
 			if (used_features.size() > prev_num_feat) {
-				utils::log(VL_ERROR, "Used more features than available. This is a problem!");
-				exit(-1);
+				utils::log(VL_DEBUG, "Used more features than available. Stopping!");
+				for (std::string s: used_features)
+					utils::log(VL_DEBUG, s);
+				break;
 			}
 			if (found && bic + bic_penalty < best_bic && used_features.size() == prev_num_feat) {
 				best_bic = bic;

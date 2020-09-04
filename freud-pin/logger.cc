@@ -9,7 +9,7 @@ enum verbosity_levels vl = VL_DEBUG;
 
 std::string log_label(enum verbosity_levels vl) {
 	if (vl == VL_ERROR) {
-		return "ERR";
+		return "ERR: ";
 	} else if (vl == VL_INFO) {
 		return "INFO: ";
 	} else if (vl == VL_DEBUG) {

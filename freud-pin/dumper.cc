@@ -146,6 +146,9 @@ size_t write_logs_to_file(std::string rtn_name, const struct routine_descriptor 
 							oss.str("Got ");
 							oss << (*history)[i]->feature_values.size();
 							log(VL_ERROR, oss.str());
+							oss.str("Feat ");
+							oss << pf.name;
+							log(VL_ERROR, oss.str());
 							exit(-1);
 						}
 						uint64_t offs = fname_offsets[pf.name];
