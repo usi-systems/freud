@@ -215,7 +215,7 @@ expr::evaluate(expr_context *ctx, const std::initializer_list<taddr> &arguments,
 					tmp1.u = (unsigned)frame_base.value;
 					tmp2.s = cur.sleb128();
 					result.offset_from_value += tmp2.s;
-					printf("Now I have a reg with off % " PRId64 "!\n", tmp2.s);
+					//printf("Now I have a reg with off % " PRId64 "!\n", tmp2.s);
 					
 					// FIXME: properly handle the stack and the registers!
 					stack.push_back((int64_t)ctx->reg(tmp1.u).offset + tmp2.s);
@@ -224,7 +224,7 @@ expr::evaluate(expr_context *ctx, const std::initializer_list<taddr> &arguments,
 				case expr_result::type::address:
 					tmp1.u = frame_base.value;
 					tmp2.s = cur.sleb128();
-					printf("Now I have an addr with off %" PRId64 "! Prev fb: %" PRId64 "\n", tmp2.s, result.offset_from_value);
+					//printf("Now I have an addr with off %" PRId64 "! Prev fb: %" PRId64 "\n", tmp2.s, result.offset_from_value);
 					result.offset_from_value += tmp2.s;
 					stack.push_back(tmp1.u + tmp2.s);
 					evaluation_string += "+ " + std::to_string(tmp1.u + tmp2.s);
@@ -331,7 +331,7 @@ expr::evaluate(expr_context *ctx, const std::initializer_list<taddr> &arguments,
 					if (cfa.regnum == -1) {
 						throw runtime_error("call_frame_cfa; could not evaluate CFA");
 					}
-					printf("CFA: %d from REG %d\n", cfa.offset, cfa.regnum);
+					//printf("CFA: %d from REG %d\n", cfa.offset, cfa.regnum);
 					
 					result.location_type = expr_result::type::reg;
 					result.value = cfa.regnum;	

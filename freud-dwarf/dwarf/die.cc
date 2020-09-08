@@ -161,9 +161,9 @@ die::begin() const
 {
 	if (acode > 1024) 
 		printf("ACODE is too big, fixme %" PRIu64 "\n", acode);
-        if (acode > 1024 || !abbrev || !abbrev->children)
-                return end();
-        return iterator(cu, next);
+	if (acode > 1024 || !abbrev || !abbrev->children)
+			return end();
+	return iterator(cu, next);
 }
 
 die::iterator::iterator(const unit *cu, section_offset off)

@@ -385,7 +385,7 @@ struct cfa_eval_result frame::evaluate_cfa(cursor cur, uint64_t length, expr_con
 	uint64_t current_loc = initial_offset;
 	while (cur.get_section_offset() < length) {
 		DW_CFA cfa_op = (DW_CFA)cur.fixed<ubyte>();
-		printf("Read CFA op %u\n", (unsigned)cfa_op);
+		//printf("Read CFA op %u\n", (unsigned)cfa_op);
 		if (cfa_op >= DW_CFA::advance_loc) {
 			// DWARF4, section 7.23, Fig. 40
 			// Let's retrieve the 6 least significant bits
@@ -409,7 +409,7 @@ struct cfa_eval_result frame::evaluate_cfa(cursor cur, uint64_t length, expr_con
 				case DW_CFA::advance_loc:
 					{
 					current_loc += (unsigned)argument;
-					printf("Advancing loc; incr: %x, curr: %" PRIx64 ", pc: %" PRIx64 "\n", argument, current_loc, ctx->pc());
+					//printf("Advancing loc; incr: %x, curr: %" PRIx64 ", pc: %" PRIx64 "\n", argument, current_loc, ctx->pc());
 					if (current_loc > ctx->pc()) {
 						res.regnum = ctx->get_cfa_reg();
 						res.offset = ctx->get_cfa_offset(); 

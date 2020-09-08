@@ -25,7 +25,7 @@ void instr_expr_context::add_reg_offset(unsigned regnum, int64_t off) {
 }
 
 void instr_expr_context::set_cfa(unsigned regnum, int64_t offset) {
-	std::cout << "Setting CFA_ to " << regnum << "; " << offset << std::endl;
+	//std::cout << "Setting CFA_ to " << regnum << "; " << offset << std::endl;
 	cfa.regnum = regnum;
 	cfa.offset = offset;
 }
@@ -43,12 +43,12 @@ int64_t instr_expr_context::get_cfa_offset() {
 }
 
 void instr_expr_context::set_cfa_reg(unsigned regnum) {
-	std::cout << "Setting CFA_REG to " << regnum << std::endl;
+	//std::cout << "Setting CFA_REG to " << regnum << std::endl;
 	cfa.regnum = regnum;
 }
 
 void instr_expr_context::set_cfa_offset(int64_t off) {
-	std::cout << "Setting CFA_OFF to " << off << std::endl;
+	//std::cout << "Setting CFA_OFF to " << off << std::endl;
 	cfa.offset = off;
 }
 

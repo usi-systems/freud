@@ -723,8 +723,7 @@ void dwarf_explorer::dump_parameters(const dwarf::die &node, std::string fname, 
 		func_pars_map[fname].insert(func_pars_map[fname].end(), cu_variables.begin(), cu_variables.end());
 }
 
-void dwarf_explorer::walk_tree_dfs(const dwarf::die &node, 
-					const dwarf::die &parent, 
+void dwarf_explorer::walk_tree_dfs(const dwarf::die node, 
 					const dwarf::line_table lt, 
 #ifdef WITH_GLOBAL_VARIABLES
 					const dwarf::die last_cu, 
@@ -733,12 +732,6 @@ void dwarf_explorer::walk_tree_dfs(const dwarf::die &node,
 					const std::unordered_set<std::string> & symbols_bl)
 {
 #ifdef WITH_GLOBAL_VARIABLES
-	bool cu_found = false;
-	dwarf::die last_lcu;
-	if (node.tag == dwarf::DW_TAG::compile_unit) {
-		cu_found = true;
-		last_lcu = node;
-	} else 
 	// TODO: I am assuming that a class/struct die is necessarily going to be at the root level in the CU; is this true?
 	// E.g. it is for sure not true for nested class/struct, which are not handled ATM
 	if ((node.tag == dwarf::DW_TAG::class_type || node.tag == dwarf::DW_TAG::structure_type) && !node.has(dwarf::DW_AT::declaration) && node.has(dwarf::DW_AT::name)) { 
@@ -748,7 +741,8 @@ void dwarf_explorer::walk_tree_dfs(const dwarf::die &node,
 		if (hierarchy_tree_nodes_map.find(cname) == hierarchy_tree_nodes_map.end()) {
 			hierarchy_tree_nodes_map.insert(std::make_pair(cname, new hierarchy_tree_node(cname, get_class_linkage_name(cname, node))));
 		}
-		for (auto &kid: node) {
+		dwarf::die node_cpy(node);
+		for (auto &kid: node_cpy) {
 			if (kid.tag == dwarf::DW_TAG::inheritance) {
 				if (!kid.has(dwarf::DW_AT::data_member_location)) {
 					utils::log(VL_ERROR, "Inheritance without data_member_location!");
@@ -797,12 +791,12 @@ void dwarf_explorer::walk_tree_dfs(const dwarf::die &node,
 			fname = to_string(node[dwarf::DW_AT::linkage_name]);
 		else if (node.has(dwarf::DW_AT::name)) 
 			fname = to_string(node[dwarf::DW_AT::name]);
-		else if (node.has(dwarf::DW_AT::specification)) { // && node[dwarf::DW_AT::specification].as_reference().tag == dwarf::DW_TAG::subprogram) {
-			dwarf::die parent = node[dwarf::DW_AT::specification].as_reference();
-			if (parent.has(dwarf::DW_AT::linkage_name))
-				fname = to_string(parent[dwarf::DW_AT::linkage_name]);
-			else if (parent.has(dwarf::DW_AT::name)) 
-				fname = to_string(parent[dwarf::DW_AT::name]);
+		else if (node.has(dwarf::DW_AT::specification)) {
+			dwarf::die spec_parent = node[dwarf::DW_AT::specification].as_reference();
+			if (spec_parent.has(dwarf::DW_AT::linkage_name))
+				fname = to_string(spec_parent[dwarf::DW_AT::linkage_name]);
+			else if (spec_parent.has(dwarf::DW_AT::name)) 
+				fname = to_string(spec_parent[dwarf::DW_AT::name]);
 		}
 		else if (node.has(dwarf::DW_AT::abstract_origin)) {
 			// this is an inlined function. Do nothing, since pin is not gonna let us hook into this anyway, probably
@@ -839,14 +833,12 @@ void dwarf_explorer::walk_tree_dfs(const dwarf::die &node,
 				} 
 			}
 		}
+		return; // no need to dive deeper
 	} 
         
-	for (auto &child : node)
+	for (auto child: node) 
 #ifdef WITH_GLOBAL_VARIABLES
-		if (cu_found)
-			walk_tree_dfs(child, node, lt, last_lcu, symbols_wl, symbols_bl);
-		else
-			walk_tree_dfs(child, node, lt, last_cu, symbols_wl, symbols_bl);
+		walk_tree_dfs(child, lt, last_cu, symbols_wl, symbols_bl);
 #else
 		walk_tree_dfs(child, node, lt, symbols_wl, symbols_bl);
 #endif

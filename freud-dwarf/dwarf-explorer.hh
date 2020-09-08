@@ -64,9 +64,9 @@ public:
 	// Scan the debugging symbols to find the possible features for the parameters 
 	// and global variables for each symbol in symbols_wl
 #ifdef WITH_GLOBAL_VARIABLES
-	void walk_tree_dfs(const dwarf::die &node, const dwarf::die &parent, const dwarf::line_table lt, const dwarf::die last_cu, const std::unordered_set<std::string> & symbols_wl, const std::unordered_set<std::string> & symbols_bl);
+	void walk_tree_dfs(const dwarf::die node, const dwarf::line_table lt, const dwarf::die last_cu, const std::unordered_set<std::string> & symbols_wl, const std::unordered_set<std::string> & symbols_bl);
 #else
-	void walk_tree_dfs(const dwarf::die &node, const dwarf::die &parent, const dwarf::line_table lt, const std::unordered_set<std::string> & symbols_wl, const std::unordered_set<std::string> & symbols_bl);
+	void walk_tree_dfs(const dwarf::die node, const dwarf::line_table lt, const std::unordered_set<std::string> & symbols_wl, const std::unordered_set<std::string> & symbols_bl);
 #endif
 };
 

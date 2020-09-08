@@ -102,7 +102,7 @@ int main(const int argc, const char **argv)
 	dwarf_explorer * curiosity = new dwarf_explorer(argv[1], max_depth, max_features);
 
 	// PHASE 1: explore dwarf info to find function and variables
-        for (auto cu : dw.compilation_units()) {
+	for (auto cu : dw.compilation_units()) {
 		const dwarf::die curoot = cu.root();
 		std::string cuname = to_string(curoot[dwarf::DW_AT::name]);
 		if ((cu_wl.size() > 0 && cu_wl.find(cuname) == cu_wl.end()) 
@@ -112,9 +112,9 @@ int main(const int argc, const char **argv)
 		dwarf::line_table lt = cu.get_line_table();
 		utils::log(VL_INFO, "### Exploring Compilation Unit " + cuname + "###");
 #ifdef WITH_GLOBAL_VARIABLES
-		curiosity->walk_tree_dfs(curoot, curoot, lt, curoot, symbols_wl, symbols_bl);
+		curiosity->walk_tree_dfs(curoot, lt, curoot, symbols_wl, symbols_bl);
 #else
-		curiosity->walk_tree_dfs(curoot, curoot, lt);
+		curiosity->walk_tree_dfs(curoot, lt);
 #endif
         }
 	utils::log(VL_INFO, "### DONE EXPLORING DWARF INFO ###");

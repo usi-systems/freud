@@ -181,7 +181,7 @@ elf::get_segment(unsigned index) const
 
 struct segment::impl {
         impl(const elf &f)
-                : f(f) { }
+                : f(f), data(nullptr) { }
 
         const elf f;
         Phdr<> hdr;
