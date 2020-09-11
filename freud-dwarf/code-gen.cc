@@ -282,7 +282,7 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 						uname.find("BEGIN") != std::string::npos 
 						) {
 					if (first) {
-						std::cout << "There's more than one possible first member, skipping the last" << std::endl;
+						utils::log(VL_DEBUG, "There's more than one possible first member, skipping the last");
 					} else {
 						first = true;
 						first_m = m;
@@ -295,7 +295,7 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 						uname.find("END") != std::string::npos 
 						) {
 					if (last) {
-						std::cout << "There's more than one possible last member, skipping the last" << std::endl;
+						utils::log(VL_DEBUG, "There's more than one possible last member, skipping the last");
 					} else {
 						last = true;
 						last_m = m;
@@ -365,6 +365,7 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 			std::string sym_name = type_pair.first.substr(type_pair.first.find(" ") + 1, std::string::npos);
 			utils::log(VL_DEBUG, "Dynamic Types | " + std::to_string(de->hierarchy_tree_nodes_map.size()) + " members; looking for " + sym_name); 
 
+			can_add_size = false;
 			// Whatever follows should not change anymore
 			if (de->hierarchy_tree_nodes_map.find(sym_name) == de->hierarchy_tree_nodes_map.end()) {
 				utils::log(VL_ERROR, "Hierarchy tree not found for " + sym_name + ", bailing out");
@@ -376,9 +377,10 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 					utils::log(VL_DEBUG, sym_name + " members:"); 
 					bool first_vptr = true;
 					for (struct member m: type_pair.second) {
-						utils::log(VL_DEBUG, sym_name + " m.feat_names.front()"); 
+						utils::log(VL_DEBUG, sym_name + " " + m.feat_names.front()); 
 						if (m.feat_names.front().find("_vptr") == 0) {
 							// here I have what I need
+							utils::log(VL_DEBUG, "Found _vptr"); 
 							feature_processing += "if (PIN_SafeCopy(&foo, (void *)(struct_base_address + " + std::to_string(m.offset[0]) + "), sizeof(ADDRINT)) < sizeof(ADDRINT)) {re->add_runtime_type(0); continue; }\n";
 							if (first_vptr) {
 								feature_processing += "char * ro_type_name;\n";
@@ -394,15 +396,22 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 							feature_processing += "}\n";
 						}
 					}
+					if (first_vptr == true) {
+						// Ouch
+						feature_processing += "// This is a polymorphic type, but I could not find the _vptr member; try to increase the search depth!\n";
+						utils::log(VL_ERROR, "Could not find _vptr for " + sym_name + ", this is probably causing problems. Increase the max_depth!");
+					}
 				} else {
+					unsigned int prev_size = feature_processing.size();
 					for (struct member m: type_pair.second) 
-						feature_processing += code_generator::get_complex_feature_processing_text_from_addr(m, used_names); 
+						feature_processing += code_generator::get_complex_feature_processing_text_from_addr(m, used_names);
+					if (feature_processing.size() > prev_size)
+						can_add_size = true;
+					if (size_found && can_add_size) 
+						feature_processing += "re->add_feature_value(" + utils::copy_validate_f_name(last_m.feat_names.front()) + " - " + utils::copy_validate_f_name(first_m.feat_names.front()) + ");";
 				}
 			}
-
 			
-			if (size_found) 
-				feature_processing += "re->add_feature_value(" + utils::copy_validate_f_name(last_m.feat_names.front()) + " - " + utils::copy_validate_f_name(first_m.feat_names.front()) + ");";
 		}
 		feature_processing += "break; }\n";
 	}
@@ -421,29 +430,40 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 void code_generator::create_switch_cases_dfs(const dwarf_explorer * de, const int tree_size, std::string &feature_processing, const std::string sym_name, std::unordered_set<std::string> & used_names, const int offset) {
 	std::string h, tmp;
 	if (tree_size > 1) {
-		h = std::to_string(utils::hash((unsigned char *)de->hierarchy_tree_nodes_map.at(sym_name)->linkage_name.c_str()));
+		tmp = de->hierarchy_tree_nodes_map.at(sym_name)->linkage_name;
 	} else {
-		// If I need to actually check for polymorphism, need to "magle" the symbol name
+		// If I need to actually check for polymorphism, need to "mangle" the symbol name
 		// to match what I am going to read from __class_type_info
 		tmp = std::to_string(sym_name.size()) + sym_name; 
-		h = std::to_string(utils::hash((unsigned char *)tmp.c_str()));
 	}
 
-	// Put some comments in the generated code for readability for debugging purposes
-	feature_processing += "// DTYPE " + sym_name + "\n";
-	feature_processing += "case " + h + "lu: {\n";
-	if (offset != 0)
-		feature_processing += "struct_base_address += " + std::to_string(offset) + ";\n";
-	tmp = "class " + sym_name; 
-	if (de->types.find(tmp) != de->types.end()) {
-		// get the actual C code for reading data
-		for (struct member m: de->types.at(tmp)) { 
-			feature_processing += code_generator::get_complex_feature_processing_text_from_addr(m, used_names);
+	std::string tmp_feature_processing = "";
+	bool some_feat = false;
+	utils::log(VL_DEBUG, "Going DFS for " + sym_name + " a.k.a. " + tmp);
+	if (tmp != "notfound") {
+		h = std::to_string(utils::hash((unsigned char *)tmp.c_str()));
+		// Put some comments in the generated code for readability for debugging purposes
+		tmp_feature_processing += "// DTYPE " + sym_name + "\n";
+		tmp_feature_processing += "case " + h + "lu: {\n";
+		if (offset != 0)
+			tmp_feature_processing += "struct_base_address += " + std::to_string(offset) + ";\n";
+		tmp = "class " + sym_name; 
+		unsigned int prev_size = tmp_feature_processing.size();
+		if (de->types.find(tmp) != de->types.end()) {
+			// get the actual C code for reading data
+			for (struct member m: de->types.at(tmp)) { 
+				tmp_feature_processing += code_generator::get_complex_feature_processing_text_from_addr(m, used_names);
+			}
+		} else {
+			utils::log(VL_DEBUG, "Warning: could not find members for " + tmp);
 		}
-	} else {
-		utils::log(VL_DEBUG, "Warning: could not find members for " + tmp);
+		if (tmp_feature_processing.size() > prev_size)
+			some_feat = true;
+		tmp_feature_processing += "break;}\n";
 	}
-	feature_processing += "break;}\n";
+
+	if (some_feat)
+		feature_processing += tmp_feature_processing;
 
 	// Go down in the class graph 
 	struct hierarchy_tree_node * htn = de->hierarchy_tree_nodes_map.at(sym_name);

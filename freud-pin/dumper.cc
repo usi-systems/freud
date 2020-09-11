@@ -134,28 +134,30 @@ size_t write_logs_to_file(std::string rtn_name, const struct routine_descriptor 
 						// basic type
 						runtime_type = "0";
 					}
+
 					if (dfp.runtime_type_to_features.find(runtime_type) == dfp.runtime_type_to_features.end()) {
-						log(VL_ERROR, "Error, cannot find rtype " + runtime_type + " for " + dfp.type_name);
-						exit(-1);
-					}
-					for (struct primitive_feature pf: dfp.runtime_type_to_features[runtime_type]) {
-						if (tot_features >= (*history)[i]->feature_values.size()) {
-							log(VL_ERROR, "Less features than expected in " + rtn_name + "!");
-							log(VL_ERROR, runtime_type);
-							std::ostringstream oss;
-							oss.str("Got ");
-							oss << (*history)[i]->feature_values.size();
-							log(VL_ERROR, oss.str());
-							oss.str("Feat ");
-							oss << pf.name;
-							log(VL_ERROR, oss.str());
-							exit(-1);
+						log(VL_ERROR, "Warning, found unknown dynamic type " + runtime_type + " for " + dfp.type_name);
+						//exit(-1);
+					} else {
+						for (struct primitive_feature pf: dfp.runtime_type_to_features[runtime_type]) {
+							if (tot_features >= (*history)[i]->feature_values.size()) {
+								log(VL_ERROR, "Less features than expected in " + rtn_name + "!");
+								log(VL_ERROR, runtime_type);
+								std::ostringstream oss;
+								oss.str("Got ");
+								oss << (*history)[i]->feature_values.size();
+								log(VL_ERROR, oss.str());
+								oss.str("Feat ");
+								oss << pf.name;
+								log(VL_ERROR, oss.str());
+								exit(-1);
+							}
+							uint64_t offs = fname_offsets[pf.name];
+							uint64_t toffs = ftype_offsets[pf.type];
+							outFile.write((char *)&offs, sizeof(uint64_t));
+							outFile.write((char *)&toffs, sizeof(uint64_t));
+							outFile.write((char *)&((*history)[i]->feature_values[tot_features++]), sizeof(int64_t));
 						}
-						uint64_t offs = fname_offsets[pf.name];
-						uint64_t toffs = ftype_offsets[pf.type];
-						outFile.write((char *)&offs, sizeof(uint64_t));
-						outFile.write((char *)&toffs, sizeof(uint64_t));
-						outFile.write((char *)&((*history)[i]->feature_values[tot_features++]), sizeof(int64_t));
 					}
 				}
 				if (tot_features != (*history)[i]->feature_values.size()) {

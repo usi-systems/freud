@@ -114,17 +114,17 @@ struct rtn_execution
 	template<typename T> 
 	void add_feature_value(T arg) {
 		// looks like we can read this thing
-		feature_values.push_back((int)arg);
+		feature_values.push_back((int64_t)arg);
 	}
 	
 	void add_feature_value(long long unsigned int* arg){
-	 	long long unsigned int foo;
-		if (arg && PIN_SafeCopy(&foo, arg, sizeof(long long unsigned int)) == sizeof(long long unsigned int)) {
+	 	long long unsigned int tmp;
+		if (arg && PIN_SafeCopy(&tmp, arg, sizeof(long long unsigned int)) == sizeof(long long unsigned int)) {
 			// looks like we can read this thing
 			//if (foo > INT32_MAX)
 			//	std::cout << "TODO: unsigned long long too big for uint32_t!" << std::endl; 
 			//std::cout << "Added long long val! " << foo << std::endl; 
-			feature_values.push_back(foo % UINT32_MAX);
+			feature_values.push_back(tmp % UINT32_MAX);
 		}
 		else 
 			feature_values.push_back(0);

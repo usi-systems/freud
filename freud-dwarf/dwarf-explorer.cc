@@ -739,7 +739,10 @@ void dwarf_explorer::walk_tree_dfs(const dwarf::die node,
 		std::string cname = to_string(node[dwarf::DW_AT::name]);
 		//std::cout << "### Found class " << cname << std::endl;
 		if (hierarchy_tree_nodes_map.find(cname) == hierarchy_tree_nodes_map.end()) {
-			hierarchy_tree_nodes_map.insert(std::make_pair(cname, new hierarchy_tree_node(cname, get_class_linkage_name(cname, node))));
+			std::string linkage_name = get_class_linkage_name(cname, node);
+			if (linkage_name == "notfound")
+				return; // no need to dive deeper
+			hierarchy_tree_nodes_map.insert(std::make_pair(cname, new hierarchy_tree_node(cname, linkage_name)));
 		}
 		dwarf::die node_cpy(node);
 		for (auto &kid: node_cpy) {
@@ -769,12 +772,14 @@ void dwarf_explorer::walk_tree_dfs(const dwarf::die node,
 				std::string link_name;
 				std::string parent_name = get_class_name(kid, link_name);
 				if (cname != parent_name) {
-					if (hierarchy_tree_nodes_map.find(parent_name) == hierarchy_tree_nodes_map.end()) {
-						hierarchy_tree_nodes_map.insert(std::make_pair(parent_name, new hierarchy_tree_node(parent_name, link_name)));
+					if (parent_name != "notfound") {
+						if (hierarchy_tree_nodes_map.find(parent_name) == hierarchy_tree_nodes_map.end()) {
+							hierarchy_tree_nodes_map.insert(std::make_pair(parent_name, new hierarchy_tree_node(parent_name, link_name)));
+						}
+						hierarchy_tree_nodes_map.at(cname)->offsets.insert(std::make_pair(parent_name, offset));
+						hierarchy_tree_nodes_map.at(parent_name)->maybe_real_type.insert(hierarchy_tree_nodes_map.at(cname));
+						hierarchy_tree_nodes_map.at(parent_name)->offsets.insert(std::make_pair(cname, -offset));
 					}
-					hierarchy_tree_nodes_map.at(cname)->offsets.insert(std::make_pair(parent_name, offset));
-					hierarchy_tree_nodes_map.at(parent_name)->maybe_real_type.insert(hierarchy_tree_nodes_map.at(cname));
-					hierarchy_tree_nodes_map.at(parent_name)->offsets.insert(std::make_pair(cname, -offset));
 				} else {
 					utils::log(VL_DEBUG, cname + " -> " + parent_name + "; check CRTP");
 				}

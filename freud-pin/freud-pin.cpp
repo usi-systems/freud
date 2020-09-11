@@ -223,10 +223,10 @@ VOID inline get_pfaults_cswitches(std::ifstream * stat_handler, uint64_t &mPf, u
 
 inline unsigned long freud_hash(const unsigned char *str) {                      	 
 	unsigned long hash = 5381;
-        int c;
-        while ((c = *str++))
+	int c;
+	while ((c = *str++))
 		hash = ((hash << 5) + hash) + c;
-        return hash;
+	return hash;
 }
 
 

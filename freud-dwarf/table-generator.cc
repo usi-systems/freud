@@ -10,9 +10,22 @@ bool table_generator::check_features(dwarf_explorer * de, const std::string sym_
 	// --- SWITCH: complex vs basic type
 	if (de->hierarchy_tree_nodes_map.find(sym_name) != de->hierarchy_tree_nodes_map.end()) {
 		// --- SWITCH: complex type
-		// even if polymorphic, there should be at least the vptr
-		// so, no need to explore the hierarchy tree
-		return !de->types.at(type_name).empty();  
+		
+		if (de->hierarchy_tree_nodes_map.at(sym_name)->maybe_real_type.size()) {
+			// if polymorphic, there should be at least the vptr
+			// check if that is true...
+			bool res = false;
+			for (auto member: de->types.at(type_name)) {
+				if (member.feat_names.front().find("_vptr") == 0) {
+					res = true;
+					break;
+				}
+			}
+			return res;
+		} else {
+			// not polymorphic
+			return !de->types.at(type_name).empty();
+		}
 	} else if (basic_features.find(type_name) != basic_features.end()) {
 		// --- SWITCH: primitive type
 		return (basic_features.at(type_name).num_of_values > 0);
@@ -128,7 +141,7 @@ std::string table_generator::get_table_entry_for_node(dwarf_explorer * de, int t
 		size_found = true;
 		// TODO: remove this hack
 		// right now I know I have only one artificial feature, but not necessarily true
-		if (artificial_features.empty())
+		if (artificial_features[pp_type_name].empty())
 			artificial_features[pp_type_name].push_back("size");
 	}
 	if (artificial_features.find(pp_type_name) != artificial_features.end()) {
