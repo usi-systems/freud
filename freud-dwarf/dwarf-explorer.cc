@@ -740,8 +740,6 @@ void dwarf_explorer::walk_tree_dfs(const dwarf::die node,
 		//std::cout << "### Found class " << cname << std::endl;
 		if (hierarchy_tree_nodes_map.find(cname) == hierarchy_tree_nodes_map.end()) {
 			std::string linkage_name = get_class_linkage_name(cname, node);
-			if (linkage_name == "notfound")
-				return; // no need to dive deeper
 			hierarchy_tree_nodes_map.insert(std::make_pair(cname, new hierarchy_tree_node(cname, linkage_name)));
 		}
 		dwarf::die node_cpy(node);

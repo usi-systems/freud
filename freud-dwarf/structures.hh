@@ -11,7 +11,7 @@
 #include "utils.hh"
 
 #define MAX_DEPTH 3 
-#define MAX_FEATURES 64 
+#define MAX_FEATURES 512 
 #define WITH_STRUCT_IN_REG
 #define CONTEXT_REGS 8
 //#define USE_VECTORS_FOR_VARIADIC
