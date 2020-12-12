@@ -166,7 +166,7 @@ uint64_t inline get_cpu_speed(std::ifstream * stat_handler) {
 	std::stringstream ss;
 	uint16_t core;
 	// Find which core is executing the thread
-	stat_handler->seekg(0);
+	stat_handler->seekg(0, ios::beg);
 	for (int i = 0; i < 38; i++) {
 		stat_handler->ignore(numeric_limits<streamsize>::max(), ' ');
 	}
@@ -174,7 +174,7 @@ uint64_t inline get_cpu_speed(std::ifstream * stat_handler) {
 
 	// Read the clock freq for such core
 	std::ifstream * cspeed = cfile_handlers[core].clock_file;
-	cspeed->seekg(0);
+	cspeed->seekg(0, ios::beg);
 	(*cspeed) >> speed;
 	return speed;
 }
@@ -195,7 +195,7 @@ uint64_t inline get_cpu_speed(std::ifstream * stat_handler) {
  */
 VOID inline get_pfaults_cswitches(std::ifstream * stat_handler, uint64_t &mPf, uint64_t &MPf, std::ifstream * status_handler, uint64_t &volsw, uint64_t &invsw) {
 	// MINOR PAGE FAULTS
-	stat_handler->seekg(0);
+	stat_handler->seekg(0, ios::beg);
 	for (int i = 0; i < 9; i++)
 		stat_handler->ignore(numeric_limits<streamsize>::max(), ' ');
 	(*stat_handler) >> mPf;
@@ -206,7 +206,7 @@ VOID inline get_pfaults_cswitches(std::ifstream * stat_handler, uint64_t &mPf, u
 	(*stat_handler) >> MPf;
 	
 	// CTX SWITCHES
-	status_handler->seekg(0);
+	status_handler->seekg(0, ios::beg);
 	for (int i = 0; i < 53; i++)
 		status_handler->ignore(numeric_limits<streamsize>::max(), '\n');
 	

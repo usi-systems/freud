@@ -31,7 +31,7 @@ size_t write_logs_to_file(std::string rtn_name, const struct routine_descriptor 
 		unordered_map<string, uint64_t> ftype_offsets;
 		set<string> ftype_names;
 		uint32_t tot_fnames = 0;
-		uint64_t tot_fnames_position = outFile.tellp();
+		std::fpos<mbstate_t> tot_fnames_position = outFile.tellp();
 		outFile.write((char *)&tot_fnames, sizeof(uint32_t));
 		
 		for (auto p: desc.params) {
@@ -70,7 +70,7 @@ size_t write_logs_to_file(std::string rtn_name, const struct routine_descriptor 
 		}
 
 		// GO BACK TO WRITE THE CORRECT NUM OF FEATURES
-		uint64_t prev_pos = outFile.tellp();
+		std::fpos<mbstate_t> prev_pos = outFile.tellp();
 		outFile.seekp(tot_fnames_position);
 		outFile.write((char *)&tot_fnames, sizeof(uint32_t));
 		outFile.seekp(prev_pos);
@@ -79,7 +79,7 @@ size_t write_logs_to_file(std::string rtn_name, const struct routine_descriptor 
 		// I need to correct the number of samples, considering also the samples for which time == -1!
 		// will do it later, though
 		samples_count = 0;
-		uint64_t num_of_samples_position = outFile.tellp();
+		std::fpos<mbstate_t> num_of_samples_position = outFile.tellp();
 		outFile.write((char *)&samples_count, sizeof(uint32_t));
 
 		//cout << "Basics " << rtn.first << endl; 
@@ -109,7 +109,7 @@ size_t write_logs_to_file(std::string rtn_name, const struct routine_descriptor 
 
 				// **** NUM OF FEATURES ****
 				uint32_t pn = 0, tot_features = 0;
-				uint64_t tf_pos = outFile.tellp();
+				std::fpos<mbstate_t> tf_pos = outFile.tellp();
 				outFile.write((char *)&tot_features, sizeof(uint32_t));
 				uint32_t rot_idx = 0;	
 				string runtime_type;
