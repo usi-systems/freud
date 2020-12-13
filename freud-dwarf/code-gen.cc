@@ -41,6 +41,7 @@ std::string code_generator::get_complex_feature_processing_text_from_addr(const 
 				for (unsigned int i = 0; i < deref_level; i++) {
 					assigned = true;
 					front_part += "if (PIN_SafeCopy(&foo, (void *)(foo + " + std::to_string(m.offset[p]) + "), sizeof(ADDRINT)) == sizeof(ADDRINT)) {";
+					feature_processing += "array_added = false;";
 					used_pinsafecopy = true;
 					if (p == m.pointer.size() - 2) // I'm interested in the dereferencing of the last level, only
 						reffed++;
@@ -83,16 +84,16 @@ std::string code_generator::get_complex_feature_processing_text_from_addr(const 
 			for (unsigned int d: m.ai.counts) {
 				feature_processing += "counts.push_back(" + std::to_string(d) + ");";
 			} 
-			feature_processing += "re->add_feature_value_array(" + utils::copy_validate_f_name(unique_name) + ", (unsigned int)" + std::to_string(m.ai.dims) + ", &counts);\n" + back_part;
+			feature_processing += "array_added=true; re->add_feature_value_array(" + utils::copy_validate_f_name(unique_name) + ", (unsigned int)" + std::to_string(m.ai.dims) + ", &counts);\n" + back_part;
 #else
-			feature_processing += "re->add_feature_value_array_var(" + utils::copy_validate_f_name(unique_name) + ", (unsigned int)" + std::to_string(m.ai.dims);
+			feature_processing += "array_added=true; re->add_feature_value_array_var(" + utils::copy_validate_f_name(unique_name) + ", (unsigned int)" + std::to_string(m.ai.dims);
 			for (unsigned int d: m.ai.counts) {
 				feature_processing += ", " + std::to_string(d);
 			}
 			feature_processing += ");\n" + back_part; 
 #endif
 			if (used_pinsafecopy) // this is needed only if we copied stuff with PIN_SafeCopy
-				feature_processing += "else { re->add_feature_value((int)0); re->add_feature_value((int)0); }\n"; // placeholder to keep intact the indices of features...
+				feature_processing += "if (!array_added) { re->add_feature_value((int)0); re->add_feature_value((int)0); }\n"; // placeholder to keep intact the indices of features...
 		}
 	}
 	return feature_processing;
@@ -151,7 +152,7 @@ std::string code_generator::get_complex_feature_processing_text_from_reg(const s
 
 void code_generator::create_instrumentation_code(const dwarf_explorer * de, std::string fprocessfname) {
 	std::ofstream fprocess(fprocessfname);
-	std::string feature_processing = "extern uint64_t base_address;\n";
+	std::string feature_processing = "extern uint64_t base_address;\nbool array_added;";
 #ifdef USE_VECTORS_FOR_VARIADIC
 	feature_processing += "vector<unsigned int> counts;\n";
 #endif
