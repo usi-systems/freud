@@ -300,19 +300,16 @@ VOID start_of_execution(struct routine_descriptor *desc,
 	};
 
 	// FP registers
-	/*
-	FLT64 finput_args[7];
-	FIXME: XMM registers are 128byte long, they do not fit in FLT64...
+	FLT32 finput_args[28];
 	  
 	PIN_GetContextRegval(ctx, REG_XMM0, (UINT8 *)(finput_args+0));
-	PIN_GetContextRegval(ctx, REG_XMM1, (UINT8 *)(finput_args+1));
-	PIN_GetContextRegval(ctx, REG_XMM2, (UINT8 *)(finput_args+2));
-	PIN_GetContextRegval(ctx, REG_XMM3, (UINT8 *)(finput_args+3));
-	PIN_GetContextRegval(ctx, REG_XMM4, (UINT8 *)(finput_args+4));
-	PIN_GetContextRegval(ctx, REG_XMM5, (UINT8 *)(finput_args+5));
-	PIN_GetContextRegval(ctx, REG_XMM6, (UINT8 *)(finput_args+6));
-	*/
-
+	PIN_GetContextRegval(ctx, REG_XMM1, (UINT8 *)(finput_args+4));
+	PIN_GetContextRegval(ctx, REG_XMM2, (UINT8 *)(finput_args+8));
+	PIN_GetContextRegval(ctx, REG_XMM3, (UINT8 *)(finput_args+12));
+	PIN_GetContextRegval(ctx, REG_XMM4, (UINT8 *)(finput_args+16));
+	PIN_GetContextRegval(ctx, REG_XMM5, (UINT8 *)(finput_args+20));
+	PIN_GetContextRegval(ctx, REG_XMM6, (UINT8 *)(finput_args+24));
+	
 	// There is no thread-safety on taken_count
 	// This means that we may collect slightly more samples than EXPECTED
 	// But it doesn't hurt, and we do not want to sync threads on this

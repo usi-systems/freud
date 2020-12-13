@@ -199,19 +199,21 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 			}
 			if (is_array == false) {
 				// *** Option 1: THE LOCATION IS A REGISTER ***
+				// If the basic feature is a floating pt, then it's stored in XMM registers 
+				bool xmm = (t == "float" || t == "double");
 				feature_processing += "if (desc->params[q].is_addr == false) {\n";  	
+				
 				
 				// If the basic feature is a ptr, just read the address from the register
 				feature_processing +=  "if (desc->params[q].is_ptr) { re->add_feature_value((" + tn + " *)(input_args[desc->params[q].position] + desc->params[q].offset));}\n";
-				
 				// Else, the actual value is already stored in the register	
-				feature_processing +=  "else { re->add_feature_value((" + tn + ")input_args[desc->params[q].position";
-				// If the basic feature is a floating pt, then it's stored in XMM registers 
-				if (t == "float" || t == "double") {
-					// These should be float arguments... 
-					feature_processing +=  " - 6";
-				}			
-				feature_processing += "] + desc->params[q].offset);}\n";
+				if (xmm) {
+					// These should be float arguments, in the XMM0-7 registers... 
+					feature_processing +=  "else { re->add_feature_value(*((" + tn + " *)(finput_args + (desc->params[q].position - 8)*4)));}\n";
+				} else {			
+					// These should be integer arguments... 
+					feature_processing +=  "else { re->add_feature_value((" + tn + ")input_args[desc->params[q].position] + desc->params[q].offset);}\n";
+				}
 
 				feature_processing += "}\nelse {\n"; // else is_addr
 					

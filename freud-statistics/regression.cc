@@ -58,10 +58,11 @@ void multiple_regression::print(std::ostream & stream) {
 
 std::string multiple_regression::get_string() {
 	std::ostringstream res;
-    	res.precision(std::numeric_limits<long double>::digits10 + 1);
-    	res << std::scientific;
+	res.precision(std::numeric_limits<long double>::digits10 + 1);
+	res << std::scientific;
 	
 	res << "[det= " << determination << " ] ";
+	res << intercept_value;
 	for (std::string f: features) {
 		if (coefficients[f] >= 0)
 			res << " +" << coefficients[f] << "*" << var_names[f];

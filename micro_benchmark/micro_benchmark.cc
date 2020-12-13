@@ -19,6 +19,7 @@ limitations under the License.
 #include <time.h>
 #include <string.h>
 #include <vector>
+#include <cmath>
 #include <stdio.h>
 
 #define UPPER_BOUND 300
@@ -178,6 +179,12 @@ void __attribute__ ((noinline)) test_linear_float(float t) {
 
 void __attribute__ ((noinline)) test_quad_int(int t) {
 	for (int i = 0; i < t; i++) {
+		usleep(t);
+	}
+}
+
+void __attribute__ ((noinline)) test_nlogn_int(int t) {
+	for (int i = 0; i < log2(t); i++) {
 		usleep(t);
 	}
 }
@@ -436,6 +443,7 @@ void run_validation() {
 	test_linear_int_pointer(&pp);
 	test_linear_float((float)2.0);
 	test_quad_int(3);
+	test_nlogn_int(3);
 	test_quad_int_wn(4, 5);
 
 	// STRING
@@ -542,8 +550,10 @@ int main(int argc, char * argv[]) {
 		fflush(stdout);
 		// NUMERIC
 		test_linear_int(t);
+		test_linear_int_pointer(&t);
 		test_linear_float((float)t);
 		test_quad_int(t);
+		test_nlogn_int(50*t);
 		test_quad_int_wn(t, 100);
 
 		// STRING
@@ -621,7 +631,6 @@ int main(int argc, char * argv[]) {
 			
 		test_grand_derived_class2(dc2);
 		flip = !flip;
-
 		//whatever::namespaced_abstract_class nc;
 		//nc.set_val(rand() % 21);
 		//test_namespace(&nc);

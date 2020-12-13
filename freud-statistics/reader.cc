@@ -133,7 +133,6 @@ void reader::read_file_binary(std::string filename, std::map<std::string, method
 				in.read((char *)&name_offset, sizeof(uint64_t));
 				in.read((char *)&type_offset, sizeof(uint64_t));
 				in.read((char *)&value, sizeof(int64_t));
-				mtd->feature_set.insert(feature_names.at(name_offset));
 				std::string type;
 				if (type_offset > 0)
 					type = type_names.at(type_offset);
@@ -145,6 +144,9 @@ void reader::read_file_binary(std::string filename, std::map<std::string, method
 				if (feat.type == FT_ENUM) {
 					mtd->enums.insert(fname);
 				}
+				// Never use the vptr or enums as an actual feature for regressions
+				if (feat.type != FT_ENUM && fname.find("_vptr") == std::string::npos)
+					mtd->feature_set.insert(fname);
 				feat.value = value;
 				//std::cout << "READ: " << fname << ": " << value << std::endl;
 				m->features_map.insert(make_pair(fname, feat));
