@@ -86,12 +86,33 @@ inline unsigned long freud_hash(const unsigned char *str);
 VOID Fini(INT32 code, VOID *v)
 {
 	log(VL_INFO, "Terminating the program, waiting for the last dump");
-	quit_dump_thread = true;
-	if (PIN_WaitForThreadTermination(dlt_uid, KnobDumpPeriod.Value() + 5000, NULL)) {
-		// JOIN
-		log(VL_DEBUG, "Dumping thread terminated correctly");
+	if (DUMP_LOG_PERIOD == 0) {
+		size_t tot_w = 0;
+		// SWITCH ALL DESCRIPTORS
+		for (std::pair<std::string, struct routine_descriptor> ar: routines_catalog) {
+			routines_catalog[ar.first].switch_history();
+		}
+		// DUMP
+		for (std::pair<std::string, struct routine_descriptor> ar: routines_catalog) {
+			// BINARY OUTPUT
+			tot_w += write_logs_to_file(ar.first, ar.second);
+		}
+		if (tot_w > 0) {
+			std::ostringstream oss;
+			oss << "Written info with " << tot_w << " samples";
+			log(VL_INFO, oss.str());
+		}
+		else {
+			log(VL_ERROR, "Nothing collected!");
+		}
 	} else {
-		log(VL_ERROR, "Dumping thread was not terminating!");
+		quit_dump_thread = true;
+		if (PIN_WaitForThreadTermination(dlt_uid, KnobDumpPeriod.Value() + 5000, NULL)) {
+			// JOIN
+			log(VL_DEBUG, "Dumping thread terminated correctly");
+		} else {
+			log(VL_ERROR, "Dumping thread was not terminating!");
+		}
 	}
 }
 /* ===================================================================== */
@@ -961,7 +982,7 @@ int main(int argc, char * argv[])
 		INS_AddInstrumentFunction(instr_branches, 0);
 
 	// Register a routine that gets called when a trace is
-    	//  inserted into the codecache
+	// inserted into the codecache
 	TRACE_AddInstrumentFunction(jit_run, NULL);
 
 	// Register Fini to be called when the application exits
@@ -969,8 +990,10 @@ int main(int argc, char * argv[])
 
 	// Prepare the dumping thread
 	DUMP_LOG_PERIOD = KnobDumpPeriod.Value();
-	PIN_SpawnInternalThread(&dump_logs, NULL, 0, &dlt_uid);
-	log(VL_DEBUG, "Launched dumping thread");
+	if (DUMP_LOG_PERIOD > 0) {
+		PIN_SpawnInternalThread(&dump_logs, NULL, 0, &dlt_uid);
+		log(VL_DEBUG, "Launched dumping thread");
+	}
 
 	// Start the program, never returns
 	log(VL_INFO, "Starting target program");

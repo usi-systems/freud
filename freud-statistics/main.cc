@@ -37,7 +37,7 @@ limitations under the License.
 void printUsage(const char *argv[]) {
 	std::cout << "Usage: " << argv[0] << " OPERATION [function_name] [magictype] INPUT_FILES" << std::endl;
 	std::cout << std::endl << "Operations: " << std::endl;
-	std::cout << "\t" << GNUPLOT << ": produce a gnuplot with values measured and the specified parameter for a specific function (./analysis 1 MTYPE FNAME FCOUNT [\"ft1\",\"ft2\"]) PATH" << std::endl;
+	std::cout << "\t" << GNUPLOT << ": produce a gnuplot with values measured and the specified parameter for a specific function (" << argv[0] << " 1 MTYPE FNAME FCOUNT [\"ft1\",\"ft2\"]) PATH" << std::endl;
 	std::cout << "\t" << ANNOTATION << ": (min_r2) (metric type) (symbol_name) print derived best-effort annotations for every function" << std::endl;
 	std::cout << "\t" << CHECK << ": check a given performance annotation against the input data" << std::endl;
 }

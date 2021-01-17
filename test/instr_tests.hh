@@ -351,3 +351,29 @@ bool check_Z15test_linear_inti(std::map<std::string, method *> &data) {
 	return false;
 }
 
+bool check_Z17test_linear_floatf(std::map<std::string, method *> &data) {
+	// Data exists
+	const std::string mname = "_Z17test_linear_floatf";
+
+	assert(data.find(mname) != data.end());
+
+	// Correct and complete features
+	method * m = data[mname];
+	assert(m->feature_set.size() >= 2 && m->feature_set.size() <= 2 + SYS_FEATURES);
+
+	assert(m->feature_set.find("t") != m->feature_set.end());
+	assert(m->feature_set.find("global_feature") != m->feature_set.end());
+
+	// Check the actual log
+	assert(m->data.size() == 1);
+
+	measure * mm = m->data[0];
+	assert(mm->features_map.size() >= 2 && mm->features_map.size() <= 2 + SYS_FEATURES);
+
+	assert(mm->get_feature_value("t") == 2);
+	assert(mm->get_feature_value("global_feature") == 55);
+
+	std::cout << "\033[1;32m Success! \033[0m" << std::endl;
+	return false;
+}
+

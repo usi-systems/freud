@@ -68,6 +68,11 @@ bool test_instrumentation_output() {
 	err |= check_Z23test_linear_int_pointerPi(data);
 
 	// _Z17test_linear_floatf
+	std::cout << "Checking _Z17test_linear_floatf" << std::endl;
+	data.clear();
+	m_ids_map.clear();
+	reader::read_folder("symbols/_Z17test_linear_floatf/", data, m_ids_map);
+	err |= check_Z17test_linear_floatf(data);
 
 	// _Z13test_quad_inti
 	std::cout << "Checking _Z13test_quad_inti" << std::endl;

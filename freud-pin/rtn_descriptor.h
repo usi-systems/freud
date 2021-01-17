@@ -94,8 +94,11 @@ struct routine_descriptor
 		// instrumented symbol
 		if (pos == -1 || (unsigned int)pos >= history[active_history][tid].size())
 			history[active_history][tid].push_back(re);
-		else
+		else {
+			// evict the old sample
+			delete history[active_history][tid][pos];
 			history[active_history][tid][pos] = re;
+		}
 		PIN_MutexUnlock(&history_mutex);
 	}
 
@@ -104,6 +107,9 @@ struct routine_descriptor
 		taken_count = 0;
 		active_history = !active_history;
 		for (int t = 0; t < MAXTHREADS; t++) {
+			for (struct rtn_execution * re: history[active_history][t]) {
+				delete re;
+			}
 			history[active_history][t].clear();
 		}
 		PIN_MutexUnlock(&history_mutex);

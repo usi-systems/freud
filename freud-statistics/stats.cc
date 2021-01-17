@@ -327,7 +327,8 @@ void stats::find_noncorr_features(const std::vector<measure *> &in_data, const s
 	// BUILD A STRING -> IDX MAP
 	std::vector<std::string> fn;
 	for (std::string feat: features) {
-		if (feature_with_var(in_data, feat)) { 
+		// Never use vptr for the actual regression
+		if ((feat.find("vptr.") != 0) && feature_with_var(in_data, feat)) {
 			fn.push_back(feat);
 		}
 	}

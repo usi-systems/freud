@@ -5,7 +5,7 @@
 
 extern std::unordered_map<std::string, std::list<std::string>> artificial_features;
 
-std::string code_generator::get_complex_feature_processing_text_from_addr(const struct member &m, std::unordered_set<std::string> &used_names) {
+std::string code_generator::get_complex_feature_processing_text_from_addr(const struct member &m, std::unordered_set<std::string> &used_names, bool & need_arr) {
 	// THIS METHOD IS CALLED ONLY FOR NON-BASIC FEATURES
 	utils::log(VL_DEBUG, "GFPCFA | " + m.feat_names.front() + " - " + std::to_string(m.pointer.size()) + " - " + std::to_string(m.offset.size()));
 	
@@ -23,17 +23,18 @@ std::string code_generator::get_complex_feature_processing_text_from_addr(const 
 	else if (tn.find("array ") == 0) 
 		tn = tn.substr(strlen("array "), std::string::npos);
 	
+	bool assigned = false, used_pinsafecopy = false;
 	if (basic_features.find(m.type_name) != basic_features.end()) {
 		std::string front_part = "";
 		std::string back_part = "";
-		bool assigned = false, used_pinsafecopy = false;
 		unsigned int reffed = 0;
 		for (unsigned int p = 0; p < m.pointer.size() - 1; p++) {
 			unsigned int deref_level = m.pointer[p + 1];
 			// If last level, check whether it's an array
-			if (p == m.pointer.size() - 2)
+			if (p == m.pointer.size() - 2) {
 				// In which case, remove 1 dereferencing level
 				deref_level -= (m.ai.dims > 0);
+			}
 			if (deref_level == 0) {
 				if (p > 0 && m.offset[p] > 0)
 					front_part += "foo += " + std::to_string(m.offset[p]) + ";";
@@ -41,10 +42,13 @@ std::string code_generator::get_complex_feature_processing_text_from_addr(const 
 				for (unsigned int i = 0; i < deref_level; i++) {
 					assigned = true;
 					front_part += "if (PIN_SafeCopy(&foo, (void *)(foo + " + std::to_string(m.offset[p]) + "), sizeof(ADDRINT)) == sizeof(ADDRINT)) {";
-					feature_processing += "array_added = false;";
 					used_pinsafecopy = true;
 					if (p == m.pointer.size() - 2) // I'm interested in the dereferencing of the last level, only
 						reffed++;
+				}
+				if (used_pinsafecopy && m.ai.dims) {
+					feature_processing += "array_added = false;";
+					need_arr = true;
 				}
 				for (unsigned int i = 0; i < deref_level; i++) {
 					back_part += "}";
@@ -84,9 +88,13 @@ std::string code_generator::get_complex_feature_processing_text_from_addr(const 
 			for (unsigned int d: m.ai.counts) {
 				feature_processing += "counts.push_back(" + std::to_string(d) + ");";
 			} 
-			feature_processing += "array_added=true; re->add_feature_value_array(" + utils::copy_validate_f_name(unique_name) + ", (unsigned int)" + std::to_string(m.ai.dims) + ", &counts);\n" + back_part;
+			if (used_pinsafecopy)
+				feature_processing += "array_added=true; ";
+			feature_processing += "re->add_feature_value_array(" + utils::copy_validate_f_name(unique_name) + ", (unsigned int)" + std::to_string(m.ai.dims) + ", &counts);\n" + back_part;
 #else
-			feature_processing += "array_added=true; re->add_feature_value_array_var(" + utils::copy_validate_f_name(unique_name) + ", (unsigned int)" + std::to_string(m.ai.dims);
+			if (used_pinsafecopy)
+				feature_processing += "array_added=true; ";
+			feature_processing += "re->add_feature_value_array_var(" + utils::copy_validate_f_name(unique_name) + ", (unsigned int)" + std::to_string(m.ai.dims);
 			for (unsigned int d: m.ai.counts) {
 				feature_processing += ", " + std::to_string(d);
 			}
@@ -152,12 +160,13 @@ std::string code_generator::get_complex_feature_processing_text_from_reg(const s
 
 void code_generator::create_instrumentation_code(const dwarf_explorer * de, std::string fprocessfname) {
 	std::ofstream fprocess(fprocessfname);
-	std::string feature_processing = "extern uint64_t base_address;\nbool array_added;";
+	std::string feature_processing = "extern uint64_t base_address;";
 #ifdef USE_VECTORS_FOR_VARIADIC
 	feature_processing += "vector<unsigned int> counts;\n";
 #endif
 	std::string signatures = "extern \"C\" {\n";
 	std::unordered_set<std::string> used_names;
+	bool need_arr = false;
 
 	feature_processing += "uint64_t static_type_hash = freud_hash((unsigned char *)desc->params[q].type_name.c_str());\n";
 	feature_processing += "switch (static_type_hash) {\n";
@@ -395,7 +404,7 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 							feature_processing += "freudhash = freud_hash((const unsigned char *)ro_type_name);\n";
 							feature_processing += "re->add_runtime_type(freudhash);\n";
 							feature_processing += "switch (freudhash) {\n";
-							create_switch_cases_dfs(de, de->get_class_graph_size(sym_name), feature_processing, sym_name, used_names, 0);
+							create_switch_cases_dfs(de, de->get_class_graph_size(sym_name), feature_processing, sym_name, used_names, 0, need_arr);
 							feature_processing += "}\n";
 						}
 					}
@@ -406,8 +415,8 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 					}
 				} else {
 					unsigned int prev_size = feature_processing.size();
-					for (struct member m: type_pair.second) 
-						feature_processing += code_generator::get_complex_feature_processing_text_from_addr(m, used_names);
+					for (struct member m: type_pair.second)
+						feature_processing += code_generator::get_complex_feature_processing_text_from_addr(m, used_names, need_arr);
 					if (feature_processing.size() > prev_size)
 						can_add_size = true;
 					if (size_found && can_add_size) 
@@ -422,6 +431,9 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 	feature_processing += "}\n"; // end of the switch
 
 	signatures += "\n}";
+	if (need_arr) {
+		fprocess << "bool array_added;\n";
+	}
 	fprocess << feature_processing; 
 	fprocess.close();
 }
@@ -430,7 +442,7 @@ void code_generator::create_instrumentation_code(const dwarf_explorer * de, std:
 * Create the switch cases in the generated code
 * Explore the class graph DFS to find all the possibilities
 */
-void code_generator::create_switch_cases_dfs(const dwarf_explorer * de, const int tree_size, std::string &feature_processing, const std::string sym_name, std::unordered_set<std::string> & used_names, const int offset) {
+void code_generator::create_switch_cases_dfs(const dwarf_explorer * de, const int tree_size, std::string &feature_processing, const std::string sym_name, std::unordered_set<std::string> & used_names, const int offset, bool & need_arr) {
 	std::string h, tmp;
 	if (tree_size > 1) {
 		tmp = de->hierarchy_tree_nodes_map.at(sym_name)->linkage_name;
@@ -455,7 +467,7 @@ void code_generator::create_switch_cases_dfs(const dwarf_explorer * de, const in
 		if (de->types.find(tmp) != de->types.end()) {
 			// get the actual C code for reading data
 			for (struct member m: de->types.at(tmp)) { 
-				tmp_feature_processing += code_generator::get_complex_feature_processing_text_from_addr(m, used_names);
+				tmp_feature_processing += code_generator::get_complex_feature_processing_text_from_addr(m, used_names, need_arr);
 			}
 		} else {
 			utils::log(VL_DEBUG, "Warning: could not find members for " + tmp);
@@ -471,7 +483,7 @@ void code_generator::create_switch_cases_dfs(const dwarf_explorer * de, const in
 	// Go down in the class graph 
 	struct hierarchy_tree_node * htn = de->hierarchy_tree_nodes_map.at(sym_name);
 	for (hierarchy_tree_node * htn_c: htn->maybe_real_type) {
-		create_switch_cases_dfs(de, tree_size, feature_processing, htn_c->class_name, used_names, offset + de->hierarchy_tree_nodes_map.at(sym_name)->offsets.at(htn_c->class_name));
+		create_switch_cases_dfs(de, tree_size, feature_processing, htn_c->class_name, used_names, offset + de->hierarchy_tree_nodes_map.at(sym_name)->offsets.at(htn_c->class_name), need_arr);
 	}
 }
 
