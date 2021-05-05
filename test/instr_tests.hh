@@ -107,9 +107,12 @@ bool check_Z14test_namespacePN8whatever25namespaced_abstract_classE(std::map<std
 
 	// Correct and complete features
 	method * m = data[mname];
-	assert(m->feature_set.size() >= 3 && m->feature_set.size() <= 3 + SYS_FEATURES);
+	assert(m->feature_set.size() >= 2 && m->feature_set.size() <= 2 + SYS_FEATURES);
 
-	assert(m->feature_set.find("nc_vptr.namespaced_abstract_class") != m->feature_set.end());
+	// FIXME: we are borrowing the reader from the "statistics" package,
+	// and there we decided not to consider _vptr as an actual feature for regressions.
+	// Still, the feature is there indeed.
+	//assert(m->feature_set.find("nc_vptr.namespaced_abstract_class") != m->feature_set.end());
 	assert(m->feature_set.find("nc.namespaced_value") != m->feature_set.end());
 	assert(m->feature_set.find("global_feature") != m->feature_set.end());
 
