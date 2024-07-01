@@ -29,8 +29,8 @@ KNOB<unsigned int> KnobDumpPeriod(KNOB_MODE_WRITEONCE, "pintool", "dump_period",
 KNOB<unsigned int> KnobLogsCount(KNOB_MODE_WRITEONCE, "pintool", "logs_count", "1000", "How many samples to take per dump_period for each symbol");
 KNOB<unsigned int> KnobVerbosityLevel(KNOB_MODE_WRITEONCE, "pintool", "verbosity_level", "1", "Verbosity level");
 
-// #define GET_PROCFS_INFO
-// #define DEBUG // should be disabled by default to avoid unnecessary overhead
+#define GET_PROCFS_INFO
+//#define DEBUG // should be disabled by default to avoid unnecessary overhead
 
 struct thread_status {
 	void init() {
@@ -73,9 +73,7 @@ unordered_map<OS_THREAD_ID, struct thr_file_handlers> tfile_handlers;
 unordered_map<unsigned int, struct cpu_file_handlers> cfile_handlers;
 unordered_map<std::string, struct routine_descriptor> routines_catalog;
 
-#ifdef GET_PROCFS_INFO
 static OS_PROCESS_ID pid;
-#endif
 uint64_t base_address;
 unsigned int tot_found_with_reloc = 0;
 
