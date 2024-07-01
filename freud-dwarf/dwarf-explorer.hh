@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <list>
 #include <queue>
+#include <cstdint>
 
 #include "elf++.hh"
 #include "dwarf++.hh"

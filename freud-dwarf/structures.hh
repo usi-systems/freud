@@ -1,12 +1,12 @@
 #ifndef STRUCTURES_HH_DEFINED
 #define STRUCTURES_HH_DEFINED
 
-#include <unordered_set>
 #include <map>
 #include <unordered_map>
 #include <vector>
 #include <list>
 #include <set>
+#include <cstdint>
 
 #include "utils.hh"
 

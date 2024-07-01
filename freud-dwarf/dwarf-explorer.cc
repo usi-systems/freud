@@ -1,3 +1,4 @@
+#include <cstdint>
 #include "dwarf-explorer.hh"
 #include "instr-expr-context.hh"
 #include <unistd.h>
