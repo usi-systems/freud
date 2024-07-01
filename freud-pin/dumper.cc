@@ -188,7 +188,7 @@ size_t write_logs_to_file(std::string rtn_name, const struct routine_descriptor 
 				// BRANCHES
 				uint32_t num_of_branches = (*history)[i]->branches.size();
 				outFile.write((char *)&num_of_branches, sizeof(uint32_t));
-				for (const std::pair<uint16_t, vector<bool>> &b: (*history)[i]->branches) {
+				for (const auto & b: (*history)[i]->branches) {
 					outFile.write((char *)&b.first, sizeof(uint16_t));
 					uint32_t num_of_executions = b.second.size();
 					outFile.write((char *)&num_of_executions, sizeof(uint32_t));

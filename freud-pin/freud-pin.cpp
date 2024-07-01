@@ -308,18 +308,6 @@ VOID start_of_execution(struct routine_descriptor *desc,
 		}
 	}
 
-	// Integer register
-	ADDRINT input_args[8] = {
-		PIN_GetContextReg(ctx, REG_RDI),
-		PIN_GetContextReg(ctx, REG_RSI),
-		PIN_GetContextReg(ctx, REG_RDX),
-		PIN_GetContextReg(ctx, REG_RCX),
-		PIN_GetContextReg(ctx, REG_R8),
-		PIN_GetContextReg(ctx, REG_R9),
-		PIN_GetContextReg(ctx, REG_RSP),
-		PIN_GetContextReg(ctx, REG_RBP),
-	};
-
 	// FP registers
 	FLT32 finput_args[28];
 	  
