@@ -1,4 +1,4 @@
-CXXFLAGS+=-std=c++11 -g -O1 -gstrict-dwarf -fPIC -pie
+CXXFLAGS+=-std=c++11 -g -O1 -gstrict-dwarf -gdwarf-4 -fPIC -pie
 
 CLEAN :=
 
