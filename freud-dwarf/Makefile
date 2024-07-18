@@ -10,8 +10,9 @@ install:
 clean:
 	$(MAKE) -C elf clean
 	$(MAKE) -C dwarf clean
-	rm *.o
-	rm freud-dwarf 
+	rm -f *.o
+	rm -f freud-dwarf
+
 check:
 	cd test && ./test.sh
 
